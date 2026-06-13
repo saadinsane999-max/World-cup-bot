@@ -1,0 +1,321 @@
+{
+  "61558103812205": {
+    "name": "saad",
+    "points": 3,
+    "history": [
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "reason": "Correct result for match 1",
+        "date": "2026-06-11T21:06:51.638Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "date": "2026-06-12T01:41:36.756Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "reason": "Correct result for match 1",
+        "date": "2026-06-12T01:50:11.089Z"
+      }
+    ]
+  },
+  "61564540891206": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61553012730088": {
+    "name": "shibli",
+    "points": 6,
+    "history": []
+  },
+  "100087932513534": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100054650213842": {
+    "name": "sadik",
+    "points": 14,
+    "history": [
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "reason": "Correct result for match 1",
+        "date": "2026-06-11T21:06:51.640Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "date": "2026-06-12T01:41:36.768Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 8,
+        "reason": "Perfect score for match 1! +8 points total (3 result + 5 bonus)",
+        "date": "2026-06-12T01:50:11.092Z"
+      }
+    ]
+  },
+  "61556733551108": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61573998086276": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100054565638289": {
+    "name": "ruhan",
+    "points": 9,
+    "history": [
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "reason": "Correct result for match 1",
+        "date": "2026-06-11T21:06:51.640Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "date": "2026-06-12T01:41:36.768Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "reason": "Correct result for match 1",
+        "date": "2026-06-12T01:50:11.093Z"
+      }
+    ]
+  },
+  "100083313205374": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100075796016312": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61574155237121": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61555199914081": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100075887820704": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100089681882652": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100078661720052": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100087886539015": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100092463141140": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61576553827768": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61579229190075": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100027001931275": {
+    "name": "rion",
+    "points": 9,
+    "history": [
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "reason": "Correct result for match 1",
+        "date": "2026-06-11T21:06:51.641Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "date": "2026-06-12T01:41:36.768Z"
+      },
+      {
+        "type": "match",
+        "matchId": "1",
+        "points": 3,
+        "reason": "Correct result for match 1",
+        "date": "2026-06-12T01:50:11.094Z"
+      }
+    ]
+  },
+  "100056271197720": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "100010996358757": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61579188787873": {
+    "name": "User",
+    "points": 0,
+    "history": []
+  },
+  "61553857331502": {
+    "name": "nafi",
+    "points": 0,
+    "history": []
+  },
+  "100078644581653": {
+    "name": "100078644581653",
+    "points": 0,
+    "history": []
+  },
+  "61583304752942": {
+    "name": "61583304752942",
+    "points": 0,
+    "history": []
+  },
+  "100062997727887": {
+    "name": "100062997727887",
+    "points": 0,
+    "history": []
+  },
+  "61587904061110": {
+    "name": "61587904061110",
+    "points": 0
+  },
+  "100068327370902": {
+    "name": "100068327370902",
+    "points": 0
+  },
+  "100066100377280": {
+    "name": "100066100377280",
+    "points": 0
+  },
+  "61583659830632": {
+    "name": "61583659830632",
+    "points": 0
+  },
+  "100088059422775": {
+    "name": "100088059422775",
+    "points": 0
+  },
+  "100027284241702": {
+    "name": "100027284241702",
+    "points": 0
+  },
+  "61588475435146": {
+    "name": "61588475435146",
+    "points": 0
+  },
+  "61551101696529": {
+    "name": "61551101696529",
+    "points": 0
+  },
+  "100085892541217": {
+    "name": "100085892541217",
+    "points": 0
+  },
+  "61552124589929": {
+    "name": "61552124589929",
+    "points": 0
+  },
+  "61561247571032": {
+    "name": "61561247571032",
+    "points": 0
+  },
+  "100044546551147": {
+    "name": "100044546551147",
+    "points": 0
+  },
+  "100009785286140": {
+    "name": "100009785286140",
+    "points": 0
+  },
+  "100027669962107": {
+    "name": "100027669962107",
+    "points": 0
+  },
+  "61567327140802": {
+    "name": "61567327140802",
+    "points": 0
+  },
+  "61578272006879": {
+    "name": "61578272006879",
+    "points": 0
+  },
+  "61578408315879": {
+    "name": "61578408315879",
+    "points": 0
+  },
+  "100092664871185": {
+    "name": "100092664871185",
+    "points": 0
+  },
+  "100087171924959": {
+    "name": "100087171924959",
+    "points": 0
+  },
+  "61570706693631": {
+    "name": "61570706693631",
+    "points": 0
+  },
+  "100019966509447": {
+    "name": "100019966509447",
+    "points": 0
+  },
+  "1524446109280403": {
+    "name": "1524446109280403",
+    "points": 0
+  },
+  "61557966343058": {
+    "name": "61557966343058",
+    "points": 0
+  },
+  "61590951021310": {
+    "name": "61590951021310",
+    "points": 0
+  },
+  "61590503560151": {
+    "name": "61590503560151",
+    "points": 0
+  }
+}
