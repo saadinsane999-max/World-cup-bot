@@ -1,15 +1,11 @@
 {
-  "name": "fbm-bot",
+  "name": "worldcup-bot",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "FIFA World Cup 2026 Prediction Bot",
+  "main": "bot-final.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node bot-final.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "biar-fca": "^3.9.5"
   }
