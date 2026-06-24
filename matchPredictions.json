@@ -34,6 +34,41 @@
       "prediction": "lose",
       "homeScore": 0,
       "awayScore": 2
+    },
+    "49": {
+      "prediction": "win",
+      "homeScore": 4,
+      "awayScore": 2
+    },
+    "50": {
+      "prediction": "win",
+      "homeScore": 4,
+      "awayScore": 0
+    },
+    "51": {
+      "prediction": "win",
+      "homeScore": 2,
+      "awayScore": 0
+    },
+    "52": {
+      "prediction": "lose",
+      "homeScore": 3,
+      "awayScore": 0
+    },
+    "53": {
+      "prediction": "lose",
+      "homeScore": 3,
+      "awayScore": 1
+    },
+    "54": {
+      "prediction": "draw",
+      "homeScore": 1,
+      "awayScore": 1
+    },
+    "55": {
+      "prediction": "lose",
+      "homeScore": 1,
+      "awayScore": 0
     }
   },
   "61553012730088": {
@@ -67,10 +102,20 @@
       "homeScore": 3,
       "awayScore": 1
     },
+    "48": {
+      "prediction": "win",
+      "homeScore": 1,
+      "awayScore": 0
+    },
+    "52": {
+      "prediction": "win",
+      "homeScore": 1,
+      "awayScore": 0
+    },
     "69": {
       "prediction": "lose",
       "homeScore": 1,
-      "awayScore": 2
+      "awayScore": 4
     }
   },
   "100054650213842": {
@@ -98,6 +143,36 @@
       "prediction": "lose",
       "homeScore": 0,
       "awayScore": 3
+    },
+    "49": {
+      "prediction": "win",
+      "homeScore": 3,
+      "awayScore": 0
+    },
+    "50": {
+      "prediction": "win",
+      "homeScore": 3,
+      "awayScore": 1
+    },
+    "51": {
+      "prediction": "win",
+      "homeScore": 4,
+      "awayScore": 0
+    },
+    "52": {
+      "prediction": "win",
+      "homeScore": 2,
+      "awayScore": 1
+    },
+    "53": {
+      "prediction": "lose",
+      "homeScore": 2,
+      "awayScore": 0
+    },
+    "54": {
+      "prediction": "lose",
+      "homeScore": 1,
+      "awayScore": 2
     }
   },
   "100054565638289": {
@@ -142,6 +217,41 @@
       "prediction": "win",
       "homeScore": 1,
       "awayScore": 0
+    },
+    "49": {
+      "prediction": "draw",
+      "homeScore": 1,
+      "awayScore": 1
+    },
+    "50": {
+      "prediction": "lose",
+      "homeScore": 1,
+      "awayScore": 2
+    },
+    "51": {
+      "prediction": "win",
+      "homeScore": 3,
+      "awayScore": 0
+    },
+    "52": {
+      "prediction": "lose",
+      "homeScore": 2,
+      "awayScore": 0
+    },
+    "53": {
+      "prediction": "lose",
+      "homeScore": 2,
+      "awayScore": 0
+    },
+    "54": {
+      "prediction": "lose",
+      "homeScore": 3,
+      "awayScore": 0
+    },
+    "55": {
+      "prediction": "draw",
+      "homeScore": 1,
+      "awayScore": 1
     }
   },
   "61564540891206": {
@@ -156,6 +266,43 @@
       "prediction": "draw",
       "homeScore": 1,
       "awayScore": 1
+    },
+    "46": {
+      "prediction": "draw",
+      "homeScore": 0,
+      "awayScore": 0
+    },
+    "52": {
+      "prediction": "lose",
+      "homeScore": 1,
+      "awayScore": 3
+    }
+  },
+  "100076763491545": {
+    "49": {
+      "prediction": "win",
+      "homeScore": 2,
+      "awayScore": 1
+    },
+    "50": {
+      "prediction": "win",
+      "homeScore": 2,
+      "awayScore": 0
+    },
+    "51": {
+      "prediction": "win",
+      "homeScore": 3,
+      "awayScore": 0
+    },
+    "52": {
+      "prediction": "lose",
+      "homeScore": 2,
+      "awayScore": 1
+    },
+    "56": {
+      "prediction": "win",
+      "homeScore": 1,
+      "awayScore": 2
     }
   }
 }
