@@ -1,8 +1,7 @@
-const { musicCommand } = require("./music.js");
-const { musicCommand } = require('./music.js');
 const { login } = require('biar-fca');
 const fs = require('fs');
 const axios = require('axios');
+const { Innertube, UniversalCache } = require('youtubei.js');
 
 const appState = [
     {
@@ -144,14 +143,7 @@ const appState = [
 
 const ADMIN_ID = "61558103812205";
 
-const languages = {
-    'en': 'en-US', 'bn': 'bn-BD', 'hi': 'hi-IN', 'ur': 'ur-PK',
-    'ar': 'ar-SA', 'es': 'es-ES', 'fr': 'fr-FR', 'de': 'de-DE',
-    'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU', 'pt': 'pt-PT',
-    'it': 'it-IT', 'ko': 'ko-KR'
-};
-
-console.log('🔄 Starting Saad\'s World Cup Bot...');
+console.log('🔄 Starting Saad\'s World Cup Bot with Music...');
 
 login({ 
   appState: appState,
@@ -198,26 +190,43 @@ login({
   }
   
   const teams = ["Argentina", "Brazil", "France", "Germany", "Spain", "England", "Netherlands", "Portugal", "Belgium", "Italy", "USA", "Mexico"];
-  
-  async function textToSpeech(text, langCode) {
-    console.log(`TTS would say: "${text}" in ${langCode}`);
-    return null;
+
+  // ========== MUSIC FUNCTION ==========
+  async function musicCommand(songTitle, threadId, api) {
+    if (!songTitle) {
+      api.sendMessage("🎵 Usage: /music [song title]\nExample: /music Shape of You", threadId);
+      return;
+    }
+    api.sendMessage(`🔍 Searching for: ${songTitle}...`, threadId);
     try {
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${langCode}&client=tw-ob`;
-      const response = await axios({ method: 'get', url: url, responseType: 'arraybuffer' });
-      return response.data;
+      const yt = await Innertube.create({ cache: new UniversalCache(false), generate_session_locally: true });
+      const search = await yt.music.search(songTitle, { type: 'video' });
+      if (!search.results || !search.results[0]) {
+        api.sendMessage("⚠️ Song not found!", threadId);
+        return;
+      }
+      const stream = await yt.download(search.results[0].id, { type: 'audio', quality: 'best', format: 'mp4' });
+      if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
+      const filePath = `./temp/music_${Date.now()}.mp3`;
+      const file = fs.createWriteStream(filePath);
+      for await (const chunk of stream) {
+        await new Promise((resolve, reject) => {
+          file.write(chunk, (error) => error ? reject(error) : resolve());
+        });
+      }
+      await new Promise(resolve => file.end(resolve));
+      api.sendMessage({ body: `🎵 Here's your song: ${songTitle}`, attachment: fs.createReadStream(filePath) }, threadId);
+      setTimeout(() => fs.unlink(filePath, () => {}), 3000);
     } catch (error) {
-      console.error('TTS Error:', error);
-      return null;
+      api.sendMessage(`❌ Error: ${error.message || 'Could not fetch music'}`, threadId);
     }
   }
-  
+  // ========== END MUSIC FUNCTION ==========
+
   function awardMatchPoints(matchId, actualResult, homeScore, awayScore) {
     if (awardedMatches[matchId]) return { count: 0, alreadyAwarded: true };
-    
     let awardedCount = 0;
     const results = [];
-    
     for (const [userId, predictions] of Object.entries(matchPredictions)) {
       if (predictions[matchId]) {
         let points = 0;
@@ -240,10 +249,8 @@ login({
   
   function awardMotmPoints(matchId, actualMotm) {
     if (awardedMotm[matchId]) return { count: 0, alreadyAwarded: true };
-    
     let awardedCount = 0;
     const results = [];
-    
     for (const [userId, prediction] of Object.entries(motmPredictions)) {
       if (prediction[matchId] && prediction[matchId].toLowerCase() === actualMotm.toLowerCase()) {
         users[userId].points += 3;
@@ -284,14 +291,11 @@ login({
   
   api.listenMqtt((err, event) => {
     if (err) return;
-    
     if (event.type === 'message') {
       const msg = event.body.trim();
       const userId = event.senderID;
       const threadId = event.threadID;
-      
       console.log(`💬 ${userId}: ${msg}`);
-      
       if (!users[userId]) {
         users[userId] = { name: userId, points: 0 };
         saveAll();
@@ -302,53 +306,17 @@ login({
           }
         });
       }
-      
       const cmd = msg.toLowerCase();
       
-      // TTS Command
-      if (cmd.startsWith('/say ')) {
-        const parts = msg.split(' ');
-        const langCode = parts[1];
-        const text = parts.slice(2).join(' ');
-        if (!languages[langCode]) {
-          api.sendMessage(`❌ Invalid language. Available: ${Object.keys(languages).join(', ')}`, threadId);
-          return;
-        }
-        if (!text) {
-          api.sendMessage(`❌ Example: /say en Hello world`, threadId);
-          return;
-        }
-        api.sendMessage(`🎤 Generating voice...`, threadId);
-        textToSpeech(text, languages[langCode]).then(audioData => {
-          if (audioData) {
-            const tempFile = `/tmp/voice_${Date.now()}.mp3`;
-            fs.writeFileSync(tempFile, audioData);
-            api.sendMessage({ body: `🔊 "${text}"`, attachment: fs.createReadStream(tempFile) }, threadId);
-            fs.unlinkSync(tempFile);
-          } else {
-            api.sendMessage(`❌ Failed to generate voice.`, threadId);
-          }
-        });
+      // MUSIC COMMAND
+      if (cmd.startsWith('/music ')) {
+        const songTitle = msg.replace('/music ', '').trim();
+        musicCommand(songTitle, threadId, api);
+        return;
       }
       
       else if (cmd === '/ping') {
-      else if (cmd.startsWith('/music ')) {
-        const songTitle = msg.replace('/music ', '').trim();
-        musicCommand(songTitle, threadId, api);
-      }
-      else if (cmd.startsWith('/music ')) {
-        const songTitle = msg.replace('/music ', '').trim();
-        musicCommand(songTitle, threadId, api);
-      }
-        api.sendMessage('🏓 Pong!', threadId);
-      else if (cmd.startsWith('/music ')) {
-        const songTitle = msg.replace('/music ', '').trim();
-        musicCommand(songTitle, threadId, api);
-      }
-      }
-      else if (cmd.startsWith('/music ')) {
-        const songTitle = msg.replace('/music ', '').trim();
-        musicCommand(songTitle, threadId, api);
+        api.sendMessage('🏓 Pong! Bot is alive!', threadId);
       }
       
       else if (cmd === '/start' || cmd === '/help') {
@@ -369,8 +337,7 @@ COMMANDS:
 /top
 /rules
 
-🎤 SAY: /say [lang] [text]
-Languages: en, bn, hi, ur, ar, es, fr, de, ja, zh, ru, pt, it, ko
+🎵 MUSIC: /music [song title]
 
 ADMIN:
 /result [id] [win/lose/draw] [score1] [score2]
@@ -435,7 +402,6 @@ ADMIN:
         api.sendMessage(reply, threadId);
       }
       
-      // MATCHES PAGES
       else if (cmd === '/matches') {
         let reply = "📅 WORLD CUP 2026 MATCHES (1-15)\n\n";
         let count = 0;
@@ -710,34 +676,100 @@ ADMIN:
     }
   });
 });
-
-// Keep-alive web server for cron-job.org
-const http = require('http');
-const PORT = process.env.PORT || 3000;
-const server = http.createServer((req, res) => {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('Bot is alive!');
-});
-server.listen(PORT, () => {
-  console.log(`✅ Web server running on port ${PORT}`);
-});
-// Alternative TTS using built-in node modules (no axios)
-const https = require('https');
-
-async function textToSpeech(text, langCode) {
-    console.log(`TTS would say: "${text}" in ${langCode}`);
-    return null;
-  return new Promise((resolve) => {
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${langCode}&client=tw-ob`;
-    https.get(url, (response) => {
-      const chunks = [];
-      response.on('data', (chunk) => chunks.push(chunk));
-      response.on('end', () => {
-        resolve(Buffer.concat(chunks));
-      });
-    }).on('error', (err) => {
-      console.error('TTS Error:', err);
-      resolve(null);
-    });
+      
+      // ADMIN COMMANDS
+      else if (userId === ADMIN_ID) {
+        if (cmd.startsWith('/result ')) {
+          const parts = cmd.replace('/result ', '').trim().split(' ');
+          const matchId = parts[0];
+          const result = parts[1];
+          const homeScore = parseInt(parts[2]);
+          const awayScore = parseInt(parts[3]);
+          if (!matches[matchId]) {
+            api.sendMessage("❌ Invalid match", threadId);
+          } else if (awardedMatches[matchId]) {
+            api.sendMessage(`⚠️ Match already awarded! Use /resetaward ${matchId} first.`, threadId);
+          } else {
+            matches[matchId].result = result;
+            matches[matchId].homeScore = homeScore;
+            matches[matchId].awayScore = awayScore;
+            matches[matchId].status = "completed";
+            const award = awardMatchPoints(matchId, result, homeScore, awayScore);
+            saveAll();
+            api.sendMessage(`✅ Match ${matchId}: ${homeScore}-${awayScore}\n🎯 ${award.count} users received points!`, threadId);
+          }
+        }
+        else if (cmd.startsWith('/motmresult ')) {
+          const parts = cmd.replace('/motmresult ', '').trim().split(' ');
+          const matchId = parts[0];
+          const playerName = parts.slice(1).join(' ');
+          if (!matches[matchId]) {
+            api.sendMessage("❌ Invalid match ID", threadId);
+          } else if (!playerName) {
+            api.sendMessage(`❌ Example: /motmresult 1 Messi`, threadId);
+          } else {
+            const award = awardMotmPoints(matchId, playerName);
+            saveAll();
+            api.sendMessage(`✅ Match ${matchId} MOTM: ${playerName}\n⭐ ${award.count} users received 3 points!`, threadId);
+          }
+        }
+        else if (cmd.startsWith('/setpoints ')) {
+          const parts = cmd.replace('/setpoints ', '').trim().split(' ');
+          const targetUserId = parts[0];
+          const newPoints = parseInt(parts[1]);
+          if (!users[targetUserId]) {
+            api.sendMessage(`❌ User ${targetUserId} not found`, threadId);
+          } else {
+            const oldPoints = users[targetUserId].points;
+            users[targetUserId].points = newPoints;
+            saveAll();
+            api.sendMessage(`✅ Set points for ${users[targetUserId].name} from ${oldPoints} to ${newPoints} points`, threadId);
+          }
+        }
+        else if (cmd.startsWith('/setname ')) {
+          const parts = cmd.replace('/setname ', '').trim().split(' ');
+          const targetUserId = parts[0];
+          const newName = parts.slice(1).join(' ');
+          if (!users[targetUserId]) {
+            api.sendMessage(`❌ User ${targetUserId} not found`, threadId);
+          } else {
+            const oldName = users[targetUserId].name;
+            users[targetUserId].name = newName;
+            saveAll();
+            api.sendMessage(`✅ Set name for ${targetUserId} from ${oldName} to ${newName}`, threadId);
+          }
+        }
+        else if (cmd.startsWith('/resetaward ')) {
+          const matchId = cmd.replace('/resetaward ', '').trim();
+          if (!awardedMatches[matchId]) {
+            api.sendMessage(`⚠️ Match ${matchId} hasn't been awarded yet!`, threadId);
+          } else {
+            delete awardedMatches[matchId];
+            if (matches[matchId]) {
+              matches[matchId].status = "upcoming";
+              matches[matchId].result = null;
+              matches[matchId].homeScore = null;
+              matches[matchId].awayScore = null;
+            }
+            saveAll();
+            api.sendMessage(`✅ Reset award for Match ${matchId}. You can now re-run /result.`, threadId);
+          }
+        }
+        else if (cmd.startsWith('/resetmotm ')) {
+          const matchId = cmd.replace('/resetmotm ', '').trim();
+          if (!awardedMotm[matchId]) {
+            api.sendMessage(`⚠️ Match ${matchId} MOTM hasn't been awarded yet!`, threadId);
+          } else {
+            delete awardedMotm[matchId];
+            saveAll();
+            api.sendMessage(`✅ Reset MOTM award for Match ${matchId}.`, threadId);
+          }
+        }
+        else if (cmd === '/status') {
+          const completed = Object.values(matches).filter(m => m.status === 'completed').length;
+          api.sendMessage(`📊 STATUS\nUsers: ${Object.keys(users).length}\nMatch Predictions: ${Object.keys(matchPredictions).length}\nMOTM Predictions: ${Object.keys(motmPredictions).length}\nCompleted: ${completed}/${Object.keys(matches).length}\nAwarded Matches: ${Object.keys(awardedMatches).length}\nAwarded MOTM: ${Object.keys(awardedMotm).length}`, threadId);
+        }
+      }
+    }
   });
-}
+});
