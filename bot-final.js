@@ -1,5 +1,6 @@
 const { login } = require('biar-fca');
 const fs = require('fs');
+const axios = require('axios');
 
 const appState = [
     {
@@ -141,6 +142,13 @@ const appState = [
 
 const ADMIN_ID = "61558103812205";
 
+const languages = {
+    'en': 'en-US', 'bn': 'bn-BD', 'hi': 'hi-IN', 'ur': 'ur-PK',
+    'ar': 'ar-SA', 'es': 'es-ES', 'fr': 'fr-FR', 'de': 'de-DE',
+    'ja': 'ja-JP', 'zh': 'zh-CN', 'ru': 'ru-RU', 'pt': 'pt-PT',
+    'it': 'it-IT', 'ko': 'ko-KR'
+};
+
 console.log('🔄 Starting Saad\'s World Cup Bot...');
 
 login({ 
@@ -162,8 +170,10 @@ login({
   let matchPredictions = {};
   let awardPredictions = {};
   let winnerPredictions = {};
+  let motmPredictions = {};
   let matches = {};
   let awardedMatches = {};
+  let awardedMotm = {};
   
   if (fs.existsSync('matches.json')) matches = JSON.parse(fs.readFileSync('matches.json'));
   if (fs.existsSync('users.json')) users = JSON.parse(fs.readFileSync('users.json'));
@@ -171,6 +181,8 @@ login({
   if (fs.existsSync('awardPredictions.json')) awardPredictions = JSON.parse(fs.readFileSync('awardPredictions.json'));
   if (fs.existsSync('winnerPredictions.json')) winnerPredictions = JSON.parse(fs.readFileSync('winnerPredictions.json'));
   if (fs.existsSync('awardedMatches.json')) awardedMatches = JSON.parse(fs.readFileSync('awardedMatches.json'));
+  if (fs.existsSync('motmPredictions.json')) motmPredictions = JSON.parse(fs.readFileSync('motmPredictions.json'));
+  if (fs.existsSync('awardedMotm.json')) awardedMotm = JSON.parse(fs.readFileSync('awardedMotm.json'));
   
   function saveAll() {
     fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
@@ -179,14 +191,25 @@ login({
     fs.writeFileSync('winnerPredictions.json', JSON.stringify(winnerPredictions, null, 2));
     fs.writeFileSync('matches.json', JSON.stringify(matches, null, 2));
     fs.writeFileSync('awardedMatches.json', JSON.stringify(awardedMatches, null, 2));
+    fs.writeFileSync('motmPredictions.json', JSON.stringify(motmPredictions, null, 2));
+    fs.writeFileSync('awardedMotm.json', JSON.stringify(awardedMotm, null, 2));
   }
   
   const teams = ["Argentina", "Brazil", "France", "Germany", "Spain", "England", "Netherlands", "Portugal", "Belgium", "Italy", "USA", "Mexico"];
   
-  function awardMatchPoints(matchId, actualResult, homeScore, awayScore) {
-    if (awardedMatches[matchId]) {
-      return { count: 0, alreadyAwarded: true };
+  async function textToSpeech(text, langCode) {
+    try {
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${langCode}&client=tw-ob`;
+      const response = await axios({ method: 'get', url: url, responseType: 'arraybuffer' });
+      return response.data;
+    } catch (error) {
+      console.error('TTS Error:', error);
+      return null;
     }
+  }
+  
+  function awardMatchPoints(matchId, actualResult, homeScore, awayScore) {
+    if (awardedMatches[matchId]) return { count: 0, alreadyAwarded: true };
     
     let awardedCount = 0;
     const results = [];
@@ -195,14 +218,10 @@ login({
       if (predictions[matchId]) {
         let points = 0;
         const pred = predictions[matchId];
-        
         if (pred.prediction === actualResult) {
           points += 3;
-          if (pred.homeScore !== null && pred.homeScore === homeScore && pred.awayScore === awayScore) {
-            points += 5;
-          }
+          if (pred.homeScore !== null && pred.homeScore === homeScore && pred.awayScore === awayScore) points += 5;
         }
-        
         if (points > 0) {
           users[userId].points += points;
           awardedCount++;
@@ -210,9 +229,52 @@ login({
         }
       }
     }
-    
     awardedMatches[matchId] = new Date().toISOString();
     saveAll();
+    return { count: awardedCount, results: results };
+  }
+  
+  function awardMotmPoints(matchId, actualMotm) {
+    if (awardedMotm[matchId]) return { count: 0, alreadyAwarded: true };
+    
+    let awardedCount = 0;
+    const results = [];
+    
+    for (const [userId, prediction] of Object.entries(motmPredictions)) {
+      if (prediction[matchId] && prediction[matchId].toLowerCase() === actualMotm.toLowerCase()) {
+        users[userId].points += 3;
+        awardedCount++;
+        results.push(`${users[userId].name || userId}: +3 pts (MOTM)`);
+      }
+    }
+    awardedMotm[matchId] = new Date().toISOString();
+    saveAll();
+    return { count: awardedCount, results: results };
+  }
+  
+  function awardWinnerPoints(actualWinner) {
+    let awardedCount = 0;
+    const results = [];
+    for (const [userId, predictedWinner] of Object.entries(winnerPredictions)) {
+      if (predictedWinner.toLowerCase() === actualWinner.toLowerCase()) {
+        users[userId].points += 20;
+        awardedCount++;
+        results.push(`${users[userId].name || userId}: +20 pts`);
+      }
+    }
+    return { count: awardedCount, results: results };
+  }
+  
+  function awardAwardPoints(awardType, actualWinner) {
+    let awardedCount = 0;
+    const results = [];
+    for (const [userId, awards] of Object.entries(awardPredictions)) {
+      if (awards[awardType] && awards[awardType].toLowerCase() === actualWinner.toLowerCase()) {
+        users[userId].points += 5;
+        awardedCount++;
+        results.push(`${users[userId].name || userId}: +5 pts`);
+      }
+    }
     return { count: awardedCount, results: results };
   }
   
@@ -239,8 +301,34 @@ login({
       
       const cmd = msg.toLowerCase();
       
-      if (cmd === '/ping') {
-        api.sendMessage('🏓 Pong! Bot is alive!', threadId);
+      // TTS Command
+      if (cmd.startsWith('/say ')) {
+        const parts = msg.split(' ');
+        const langCode = parts[1];
+        const text = parts.slice(2).join(' ');
+        if (!languages[langCode]) {
+          api.sendMessage(`❌ Invalid language. Available: ${Object.keys(languages).join(', ')}`, threadId);
+          return;
+        }
+        if (!text) {
+          api.sendMessage(`❌ Example: /say en Hello world`, threadId);
+          return;
+        }
+        api.sendMessage(`🎤 Generating voice...`, threadId);
+        textToSpeech(text, languages[langCode]).then(audioData => {
+          if (audioData) {
+            const tempFile = `/tmp/voice_${Date.now()}.mp3`;
+            fs.writeFileSync(tempFile, audioData);
+            api.sendMessage({ body: `🔊 "${text}"`, attachment: fs.createReadStream(tempFile) }, threadId);
+            fs.unlinkSync(tempFile);
+          } else {
+            api.sendMessage(`❌ Failed to generate voice.`, threadId);
+          }
+        });
+      }
+      
+      else if (cmd === '/ping') {
+        api.sendMessage('🏓 Pong!', threadId);
       }
       
       else if (cmd === '/start' || cmd === '/help') {
@@ -253,23 +341,24 @@ COMMANDS:
 /mypoints - Your points
 /mypredictions - Your predictions
 /predict [id] [win/lose/draw] [score1] [score2]
+/motm [match_id] [player_name]
 /winner [team]
 /award [type] [name]
 /matches
-/matches2 - Matches 16-30
-/matches3 - Matches 31-45
-/matches4 - Matches 46-60
-/matches5 - Matches 61-75
-/matches6 - Matches 76-90
-/matches7 - Matches 91-104
+/matches2-7 for more
 /top
 /rules
 
+🎤 SAY: /say [lang] [text]
+Languages: en, bn, hi, ur, ar, es, fr, de, ja, zh, ru, pt, it, ko
+
 ADMIN:
 /result [id] [win/lose/draw] [score1] [score2]
+/motmresult [match_id] [player_name]
 /setpoints [user_id] [points]
 /setname [user_id] [name]
 /resetaward [match_id]
+/resetmotm [match_id]
 /status`, threadId);
       }
       
@@ -280,9 +369,7 @@ ADMIN:
       else if (cmd === '/points') {
         const table = Object.entries(users).map(([id, data]) => ({ name: data.name, points: data.points })).sort((a, b) => b.points - a.points);
         let reply = "🏆 POINTS TABLE 🏆\n\n";
-        table.slice(0, 15).forEach((u, i) => {
-          reply += `${i+1}. ${u.name}: ${u.points} pts\n`;
-        });
+        table.slice(0, 15).forEach((u, i) => reply += `${i+1}. ${u.name}: ${u.points} pts\n`);
         api.sendMessage(reply, threadId);
       }
       
@@ -293,7 +380,6 @@ ADMIN:
       else if (cmd === '/mypredictions') {
         let reply = "📝 YOUR PREDICTIONS\n\n";
         let has = false;
-        
         if (matchPredictions[userId]) {
           Object.entries(matchPredictions[userId]).forEach(([id, data]) => {
             const match = matches[id];
@@ -306,24 +392,30 @@ ADMIN:
             }
           });
         }
-        
+        if (motmPredictions[userId]) {
+          Object.entries(motmPredictions[userId]).forEach(([id, player]) => {
+            const match = matches[id];
+            if (match) {
+              reply += `⭐ Match ${id} MOTM: ${player}\n`;
+              has = true;
+            }
+          });
+        }
         if (winnerPredictions[userId]) {
           reply += `\n🏆 Winner: ${winnerPredictions[userId]}\n`;
           has = true;
         }
-        
         if (awardPredictions[userId]) {
           Object.entries(awardPredictions[userId]).forEach(([award, pred]) => {
             reply += `\n⭐ ${award.replace('_', ' ')}: ${pred}\n`;
             has = true;
           });
         }
-        
         if (!has) reply += "No predictions yet!";
         api.sendMessage(reply, threadId);
       }
       
-      // MATCHES COMMANDS - All 7 pages
+      // MATCHES PAGES
       else if (cmd === '/matches') {
         let reply = "📅 WORLD CUP 2026 MATCHES (1-15)\n\n";
         let count = 0;
@@ -332,9 +424,7 @@ ADMIN:
           const icon = m.status === 'completed' ? '✅' : '⏳';
           reply += `${icon} Match ${id}: ${m.team1} vs ${m.team2}\n`;
           reply += `   📍 ${m.stage || 'Group Stage'} | 📅 ${m.date || 'TBD'}\n`;
-          if (m.status === 'completed') {
-            reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
-          }
+          if (m.status === 'completed') reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
           reply += `\n`;
           count++;
         }
@@ -349,9 +439,7 @@ ADMIN:
           const icon = m.status === 'completed' ? '✅' : '⏳';
           reply += `${icon} Match ${id}: ${m.team1} vs ${m.team2}\n`;
           reply += `   📍 ${m.stage || 'Group Stage'} | 📅 ${m.date || 'TBD'}\n`;
-          if (m.status === 'completed') {
-            reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
-          }
+          if (m.status === 'completed') reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
           reply += `\n`;
         }
         api.sendMessage(reply, threadId);
@@ -364,9 +452,7 @@ ADMIN:
           const icon = m.status === 'completed' ? '✅' : '⏳';
           reply += `${icon} Match ${id}: ${m.team1} vs ${m.team2}\n`;
           reply += `   📍 ${m.stage || 'Group Stage'} | 📅 ${m.date || 'TBD'}\n`;
-          if (m.status === 'completed') {
-            reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
-          }
+          if (m.status === 'completed') reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
           reply += `\n`;
         }
         api.sendMessage(reply, threadId);
@@ -379,9 +465,7 @@ ADMIN:
           const icon = m.status === 'completed' ? '✅' : '⏳';
           reply += `${icon} Match ${id}: ${m.team1} vs ${m.team2}\n`;
           reply += `   📍 ${m.stage || 'Group Stage'} | 📅 ${m.date || 'TBD'}\n`;
-          if (m.status === 'completed') {
-            reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
-          }
+          if (m.status === 'completed') reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
           reply += `\n`;
         }
         api.sendMessage(reply, threadId);
@@ -394,9 +478,7 @@ ADMIN:
           const icon = m.status === 'completed' ? '✅' : '⏳';
           reply += `${icon} Match ${id}: ${m.team1} vs ${m.team2}\n`;
           reply += `   📍 ${m.stage || 'Group Stage'} | 📅 ${m.date || 'TBD'}\n`;
-          if (m.status === 'completed') {
-            reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
-          }
+          if (m.status === 'completed') reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
           reply += `\n`;
         }
         api.sendMessage(reply, threadId);
@@ -409,9 +491,7 @@ ADMIN:
           const icon = m.status === 'completed' ? '✅' : '⏳';
           reply += `${icon} Match ${id}: ${m.team1} vs ${m.team2}\n`;
           reply += `   📍 ${m.stage || 'Group Stage'} | 📅 ${m.date || 'TBD'}\n`;
-          if (m.status === 'completed') {
-            reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
-          }
+          if (m.status === 'completed') reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
           reply += `\n`;
         }
         api.sendMessage(reply, threadId);
@@ -424,9 +504,7 @@ ADMIN:
           const icon = m.status === 'completed' ? '✅' : '⏳';
           reply += `${icon} Match ${id}: ${m.team1} vs ${m.team2}\n`;
           reply += `   📍 ${m.stage || 'Group Stage'} | 📅 ${m.date || 'TBD'}\n`;
-          if (m.status === 'completed') {
-            reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
-          }
+          if (m.status === 'completed') reply += `   📊 Result: ${m.homeScore} - ${m.awayScore}\n`;
           reply += `\n`;
         }
         api.sendMessage(reply, threadId);
@@ -443,7 +521,25 @@ ADMIN:
       }
       
       else if (cmd === '/rules') {
-        api.sendMessage(`📖 RULES\n\nMatch: Correct result = 3 pts\nPerfect score = +5 bonus (8 total)\nAwards: 5 pts each\nWorld Cup Winner: 20 pts`, threadId);
+        api.sendMessage(`📖 RULES\n\nMatch: Correct result = 3 pts | Perfect score = +5 bonus (8 total)\nMOTM: Correct prediction = 3 pts\nAwards: 5 pts each\nWorld Cup Winner: 20 pts`, threadId);
+      }
+      
+      else if (cmd.startsWith('/motm ')) {
+        const parts = cmd.replace('/motm ', '').trim().split(' ');
+        const matchId = parts[0];
+        const playerName = parts.slice(1).join(' ');
+        if (!matches[matchId]) {
+          api.sendMessage("❌ Invalid match ID", threadId);
+        } else if (matches[matchId].status === 'completed') {
+          api.sendMessage(`❌ Match ${matchId} already completed!`, threadId);
+        } else if (!playerName) {
+          api.sendMessage(`❌ Example: /motm 1 Messi`, threadId);
+        } else {
+          if (!motmPredictions[userId]) motmPredictions[userId] = {};
+          motmPredictions[userId][matchId] = playerName;
+          saveAll();
+          api.sendMessage(`✅ ${users[userId].name} predicted MOTM for Match ${matchId}: ${playerName}\n\n⭐ Possible points: 3 points`, threadId);
+        }
       }
       
       else if (cmd.startsWith('/predict ')) {
@@ -452,7 +548,6 @@ ADMIN:
         const result = parts[1];
         const homeScore = parts[2] ? parseInt(parts[2]) : null;
         const awayScore = parts[3] ? parseInt(parts[3]) : null;
-        
         if (!matches[matchId]) {
           api.sendMessage("❌ Invalid match ID", threadId);
         } else if (!['win', 'lose', 'draw'].includes(result)) {
@@ -463,7 +558,6 @@ ADMIN:
           if (!matchPredictions[userId]) matchPredictions[userId] = {};
           matchPredictions[userId][matchId] = { prediction: result, homeScore, awayScore };
           saveAll();
-          
           const match = matches[matchId];
           let text = result === 'win' ? match.team1 + " will win" : (result === 'lose' ? match.team2 + " will win" : "Draw");
           let reply = `✅ ${users[userId].name} predicted ${text}`;
@@ -490,7 +584,6 @@ ADMIN:
         const award = parts[0];
         const name = parts.slice(1).join(' ');
         const valid = ["golden_boot", "golden_ball", "golden_gloves", "fair_play", "emerging_player"];
-        
         if (valid.includes(award) && name) {
           if (!awardPredictions[userId]) awardPredictions[userId] = {};
           awardPredictions[userId][award] = name;
@@ -503,15 +596,12 @@ ADMIN:
       
       // ADMIN COMMANDS
       else if (userId === ADMIN_ID) {
-        
-        // Update match result
         if (cmd.startsWith('/result ')) {
           const parts = cmd.replace('/result ', '').trim().split(' ');
           const matchId = parts[0];
           const result = parts[1];
           const homeScore = parseInt(parts[2]);
           const awayScore = parseInt(parts[3]);
-          
           if (!matches[matchId]) {
             api.sendMessage("❌ Invalid match", threadId);
           } else if (awardedMatches[matchId]) {
@@ -526,13 +616,24 @@ ADMIN:
             api.sendMessage(`✅ Match ${matchId}: ${homeScore}-${awayScore}\n🎯 ${award.count} users received points!`, threadId);
           }
         }
-        
-        // Set points for a user
+        else if (cmd.startsWith('/motmresult ')) {
+          const parts = cmd.replace('/motmresult ', '').trim().split(' ');
+          const matchId = parts[0];
+          const playerName = parts.slice(1).join(' ');
+          if (!matches[matchId]) {
+            api.sendMessage("❌ Invalid match ID", threadId);
+          } else if (!playerName) {
+            api.sendMessage(`❌ Example: /motmresult 1 Messi`, threadId);
+          } else {
+            const award = awardMotmPoints(matchId, playerName);
+            saveAll();
+            api.sendMessage(`✅ Match ${matchId} MOTM: ${playerName}\n⭐ ${award.count} users received 3 points!`, threadId);
+          }
+        }
         else if (cmd.startsWith('/setpoints ')) {
           const parts = cmd.replace('/setpoints ', '').trim().split(' ');
           const targetUserId = parts[0];
           const newPoints = parseInt(parts[1]);
-          
           if (!users[targetUserId]) {
             api.sendMessage(`❌ User ${targetUserId} not found`, threadId);
           } else {
@@ -540,16 +641,12 @@ ADMIN:
             users[targetUserId].points = newPoints;
             saveAll();
             api.sendMessage(`✅ Set points for ${users[targetUserId].name} from ${oldPoints} to ${newPoints} points`, threadId);
-            console.log(`🔧 Admin set points: ${targetUserId} ${oldPoints} → ${newPoints}`);
           }
         }
-        
-        // Set name for a user
         else if (cmd.startsWith('/setname ')) {
           const parts = cmd.replace('/setname ', '').trim().split(' ');
           const targetUserId = parts[0];
           const newName = parts.slice(1).join(' ');
-          
           if (!users[targetUserId]) {
             api.sendMessage(`❌ User ${targetUserId} not found`, threadId);
           } else {
@@ -557,14 +654,10 @@ ADMIN:
             users[targetUserId].name = newName;
             saveAll();
             api.sendMessage(`✅ Set name for ${targetUserId} from ${oldName} to ${newName}`, threadId);
-            console.log(`🔧 Admin set name: ${targetUserId} ${oldName} → ${newName}`);
           }
         }
-        
-        // Reset awarded match
         else if (cmd.startsWith('/resetaward ')) {
           const matchId = cmd.replace('/resetaward ', '').trim();
-          
           if (!awardedMatches[matchId]) {
             api.sendMessage(`⚠️ Match ${matchId} hasn't been awarded yet!`, threadId);
           } else {
@@ -579,10 +672,19 @@ ADMIN:
             api.sendMessage(`✅ Reset award for Match ${matchId}. You can now re-run /result.`, threadId);
           }
         }
-        
-        // Status
+        else if (cmd.startsWith('/resetmotm ')) {
+          const matchId = cmd.replace('/resetmotm ', '').trim();
+          if (!awardedMotm[matchId]) {
+            api.sendMessage(`⚠️ Match ${matchId} MOTM hasn't been awarded yet!`, threadId);
+          } else {
+            delete awardedMotm[matchId];
+            saveAll();
+            api.sendMessage(`✅ Reset MOTM award for Match ${matchId}.`, threadId);
+          }
+        }
         else if (cmd === '/status') {
-          api.sendMessage(`📊 STATUS\nUsers: ${Object.keys(users).length}\nPredictions: ${Object.keys(matchPredictions).length}\nAwarded: ${Object.keys(awardedMatches).length} matches`, threadId);
+          const completed = Object.values(matches).filter(m => m.status === 'completed').length;
+          api.sendMessage(`📊 STATUS\nUsers: ${Object.keys(users).length}\nMatch Predictions: ${Object.keys(matchPredictions).length}\nMOTM Predictions: ${Object.keys(motmPredictions).length}\nCompleted: ${completed}/${Object.keys(matches).length}\nAwarded Matches: ${Object.keys(awardedMatches).length}\nAwarded MOTM: ${Object.keys(awardedMotm).length}`, threadId);
         }
       }
     }
