@@ -1,3 +1,5 @@
+const { musicCommand } = require("./music.js");
+const { musicCommand } = require('./music.js');
 const { login } = require('biar-fca');
 const fs = require('fs');
 const axios = require('axios');
@@ -330,7 +332,23 @@ login({
       }
       
       else if (cmd === '/ping') {
+      else if (cmd.startsWith('/music ')) {
+        const songTitle = msg.replace('/music ', '').trim();
+        musicCommand(songTitle, threadId, api);
+      }
+      else if (cmd.startsWith('/music ')) {
+        const songTitle = msg.replace('/music ', '').trim();
+        musicCommand(songTitle, threadId, api);
+      }
         api.sendMessage('🏓 Pong!', threadId);
+      else if (cmd.startsWith('/music ')) {
+        const songTitle = msg.replace('/music ', '').trim();
+        musicCommand(songTitle, threadId, api);
+      }
+      }
+      else if (cmd.startsWith('/music ')) {
+        const songTitle = msg.replace('/music ', '').trim();
+        musicCommand(songTitle, threadId, api);
       }
       
       else if (cmd === '/start' || cmd === '/help') {
