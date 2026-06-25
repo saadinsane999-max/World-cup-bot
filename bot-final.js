@@ -198,6 +198,8 @@ login({
   const teams = ["Argentina", "Brazil", "France", "Germany", "Spain", "England", "Netherlands", "Portugal", "Belgium", "Italy", "USA", "Mexico"];
   
   async function textToSpeech(text, langCode) {
+    console.log(`TTS would say: "${text}" in ${langCode}`);
+    return null;
     try {
       const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${langCode}&client=tw-ob`;
       const response = await axios({ method: 'get', url: url, responseType: 'arraybuffer' });
@@ -701,3 +703,23 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`✅ Web server running on port ${PORT}`);
 });
+// Alternative TTS using built-in node modules (no axios)
+const https = require('https');
+
+async function textToSpeech(text, langCode) {
+    console.log(`TTS would say: "${text}" in ${langCode}`);
+    return null;
+  return new Promise((resolve) => {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${langCode}&client=tw-ob`;
+    https.get(url, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    }).on('error', (err) => {
+      console.error('TTS Error:', err);
+      resolve(null);
+    });
+  });
+}
