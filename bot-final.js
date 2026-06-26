@@ -1,9 +1,7 @@
-const groupCommands = require("./group-commands.js");
-const groupCommands = require("./group-commands.js");
 const { login } = require('biar-fca');
 const fs = require('fs');
 const axios = require('axios');
-const { Innertube, UniversalCache } = require('youtubei.js');
+const groupCommands = require("./group-commands.js");
 
 const appState = [
     {
@@ -145,7 +143,7 @@ const appState = [
 
 const ADMIN_ID = "61558103812205";
 
-console.log('🔄 Starting Saad\'s World Cup Bot with Music...');
+console.log('🔄 Starting Saad\'s World Cup Bot with ALL commands...');
 
 login({ 
   appState: appState,
@@ -187,48 +185,18 @@ login({
     fs.writeFileSync('winnerPredictions.json', JSON.stringify(winnerPredictions, null, 2));
     fs.writeFileSync('matches.json', JSON.stringify(matches, null, 2));
     fs.writeFileSync('awardedMatches.json', JSON.stringify(awardedMatches, null, 2));
-    fs.writeFileSync('motmPredictions.json', JSON.stringify(motmPredictions, null, 2));
+    fs.writeFileSync('motmPredictions.json',JSON.stringify(motmPredictions, null, 2));
     fs.writeFileSync('awardedMotm.json', JSON.stringify(awardedMotm, null, 2));
   }
   
   const teams = ["Argentina", "Brazil", "France", "Germany", "Spain", "England", "Netherlands", "Portugal", "Belgium", "Italy", "USA", "Mexico"];
 
-  // ========== MUSIC FUNCTION ==========
-  async function musicCommand(songTitle, threadId, api) {
-    if (!songTitle) {
-      api.sendMessage("🎵 Usage: /music [song title]\nExample: /music Shape of You", threadId);
-      return;
-    }
-    api.sendMessage(`🔍 Searching for: ${songTitle}...`, threadId);
-    try {
-      const yt = await Innertube.create({ cache: new UniversalCache(false), generate_session_locally: true });
-      const search = await yt.music.search(songTitle, { type: 'video' });
-      if (!search.results || !search.results[0]) {
-        api.sendMessage("⚠️ Song not found!", threadId);
-        return;
-      }
-      const stream = await yt.download(search.results[0].id, { type: 'audio', quality: 'best', format: 'mp4' });
-      if (!fs.existsSync('./temp')) fs.mkdirSync('./temp');
-      const filePath = `./temp/music_${Date.now()}.mp3`;
-      const file = fs.createWriteStream(filePath);
-      for await (const chunk of stream) {
-        await new Promise((resolve, reject) => {
-          file.write(chunk, (error) => error ? reject(error) : resolve());
-        });
-      }
-      await new Promise(resolve => file.end(resolve));
-      api.sendMessage({ body: `🎵 Here's your song: ${songTitle}`, attachment: fs.createReadStream(filePath) }, threadId);
-      setTimeout(() => fs.unlink(filePath, () => {}), 3000);
-    } catch (error) {
-      api.sendMessage(`❌ Error: ${error.message || 'Could not fetch music'}`, threadId);
-    }
-  }
-  // ========== END MUSIC FUNCTION ==========
-
   function awardMatchPoints(matchId, actualResult, homeScore, awayScore) {
     if (awardedMatches[matchId]) return { count: 0, alreadyAwarded: true };
+    
     let awardedCount = 0;
     const results = [];
+    
     for (const [userId, predictions] of Object.entries(matchPredictions)) {
       if (predictions[matchId]) {
         let points = 0;
@@ -251,8 +219,10 @@ login({
   
   function awardMotmPoints(matchId, actualMotm) {
     if (awardedMotm[matchId]) return { count: 0, alreadyAwarded: true };
+    
     let awardedCount = 0;
     const results = [];
+    
     for (const [userId, prediction] of Object.entries(motmPredictions)) {
       if (prediction[matchId] && prediction[matchId].toLowerCase() === actualMotm.toLowerCase()) {
         users[userId].points += 3;
@@ -293,11 +263,14 @@ login({
   
   api.listenMqtt((err, event) => {
     if (err) return;
+    
     if (event.type === 'message') {
       const msg = event.body.trim();
       const userId = event.senderID;
       const threadId = event.threadID;
+      
       console.log(`💬 ${userId}: ${msg}`);
+      
       if (!users[userId]) {
         users[userId] = { name: userId, points: 0 };
         saveAll();
@@ -308,34 +281,40 @@ login({
           }
         });
       }
+      
       const cmd = msg.toLowerCase();
       
-      // MUSIC COMMAND
-      if (cmd.startsWith('/music ')) {
-        const songTitle = msg.replace('/music ', '').trim();
-        musicCommand(songTitle, threadId, api);
+      // ========== GROUP MANAGEMENT COMMANDS ==========
+      if (cmd.startsWith('/kick')) {
+        const input = cmd.replace('/kick', '').trim();
+        groupCommands.kickUser(api, event, input, ADMIN_ID);
         return;
       }
+      
+      else if (cmd.startsWith('/adduser')) {
+        const input = cmd.replace('/adduser', '').trim();
+        groupCommands.addUser(api, event, input, ADMIN_ID);
+        return;
+      }
+      
+      else if (cmd === '/pfp') {
+        groupCommands.pfpUser(api, event);
+        return;
+      }
+      
+      else if (cmd.startsWith('/tag')) {
+        const name = cmd.replace('/tag', '').trim();
+        groupCommands.tagUser(api, event, name);
+        return;
+      }
+      // ========== END GROUP MANAGEMENT COMMANDS ==========
       
       else if (cmd === '/ping') {
         api.sendMessage('🏓 Pong! Bot is alive!', threadId);
       }
       
       else if (cmd === '/start' || cmd === '/help') {
-        api.sendMessage(`⚽ WORLD CUP BOT 2026 ⚽
-
-COMMANDS:
-\n👑 GROUP MANAGEMENT:
-/kick - Remove mentioned/replied user
-/adduser [id/url] - Add user to group
-/pfp - Get profile pic of mentioned/replied user
-/tag [name] - Mention a user by name
-\n👑 GROUP MANAGEMENT:
-/kick - Remove mentioned/replied user
-/adduser [id/url] - Add user to group
-/pfp - Get profile pic of mentioned/replied user
-/tag [name] - Mention a user by name
-/antichange - Lock group settings (theme, pic, nicknames)
+        api.sendMessage(`⚽ WORLD CUP BOT 2026 ⚽COMMANDS:
 /ping - Check bot
 /myid - Get your ID
 /points - Points table
@@ -350,7 +329,11 @@ COMMANDS:
 /top
 /rules
 
-🎵 MUSIC: /music [song title]
+👑 GROUP MANAGEMENT:
+/kick - Remove mentioned/replied user
+/adduser [id/url] - Add user to group
+/pfp - Get profile pic of mentioned/replied user
+/tag [name] - Mention a user by name
 
 ADMIN:
 /result [id] [win/lose/draw] [score1] [score2]
@@ -520,83 +503,19 @@ ADMIN:
       }
       
       else if (cmd === '/rules') {
+        api.sendMessage(`📖 RULES
 
-      // ========== GROUP MANAGEMENT COMMANDS ==========
-      else if (cmd.startsWith('/kick')) {
-        const input = cmd.replace('/kick', '').trim();
-        groupCommands.kickUser(api, event, input, ADMIN_ID);
-        return;
-      }
-      
-      else if (cmd.startsWith('/adduser')) {
-        const input = cmd.replace('/adduser', '').trim();
-        groupCommands.addUser(api, event, input, ADMIN_ID);
-        return;
-      }
-      
-      else if (cmd === '/pfp') {
-        groupCommands.pfpUser(api, event);
-        return;
-      }
-      
-      else if (cmd.startsWith('/tag')) {
-        const name = cmd.replace('/tag', '').trim();
-        groupCommands.tagUser(api, event, name);
-        return;
-      }
-      // ========== END GROUP MANAGEMENT COMMANDS ==========
-        api.sendMessage(`📖 RULES\n\nMatch: Correct result = 3 pts | Perfect score = +5 bonus (8 total)\nMOTM: Correct prediction = 3 pts\nAwards: 5 pts each\nWorld Cup Winner: 20 pts`, threadId);
+Match: Correct result = 3 pts | Perfect score = +5 bonus (8 total)
+MOTM: Correct prediction = 3 pts
+Awards: 5 pts each
+World Cup Winner: 20 pts
 
-      // ========== GROUP MANAGEMENT COMMANDS ==========
-      else if (cmd.startsWith('/kick')) {
-        const input = cmd.replace('/kick', '').trim();
-        groupCommands.kickUser(api, event, input, ADMIN_ID);
-        return;
+👑 GROUP MANAGEMENT:
+/kick - Remove user (mention or reply)
+/adduser [id/url] - Add user to group
+/pfp - Get profile picture
+/tag [name] - Mention user by name`, threadId);
       }
-      
-      else if (cmd.startsWith('/adduser')) {
-        const input = cmd.replace('/adduser', '').trim();
-        groupCommands.addUser(api, event, input, ADMIN_ID);
-        return;
-      }
-      
-      else if (cmd === '/pfp') {
-        groupCommands.pfpUser(api, event);
-        return;
-      }
-      
-      else if (cmd.startsWith('/tag')) {
-        const name = cmd.replace('/tag', '').trim();
-        groupCommands.tagUser(api, event, name);
-        return;
-      }
-      // ========== END GROUP MANAGEMENT COMMANDS ==========
-      }
-
-      // ========== GROUP MANAGEMENT COMMANDS ==========
-      else if (cmd.startsWith('/kick')) {
-        const input = cmd.replace('/kick', '').trim();
-        groupCommands.kickUser(api, event, input, ADMIN_ID);
-        return;
-      }
-      
-      else if (cmd.startsWith('/adduser')) {
-        const input = cmd.replace('/adduser', '').trim();
-        groupCommands.addUser(api, event, input, ADMIN_ID);
-        return;
-      }
-      
-      else if (cmd === '/pfp') {
-        groupCommands.pfpUser(api, event);
-        return;
-      }
-      
-      else if (cmd.startsWith('/tag')) {
-        const name = cmd.replace('/tag', '').trim();
-        groupCommands.tagUser(api, event, name);
-        return;
-      }
-      // ========== END GROUP MANAGEMENT COMMANDS ==========
       
       else if (cmd.startsWith('/motm ')) {
         const parts = cmd.replace('/motm ', '').trim().split(' ');
@@ -764,140 +683,14 @@ ADMIN:
     }
   });
 });
-      
-      // ADMIN COMMANDS
-      else if (userId === ADMIN_ID) {
-        if (cmd.startsWith('/result ')) {
-          const parts = cmd.replace('/result ', '').trim().split(' ');
-          const matchId = parts[0];
-          const result = parts[1];
-          const homeScore = parseInt(parts[2]);
-          const awayScore = parseInt(parts[3]);
-          if (!matches[matchId]) {
-            api.sendMessage("❌ Invalid match", threadId);
-          } else if (awardedMatches[matchId]) {
-            api.sendMessage(`⚠️ Match already awarded! Use /resetaward ${matchId} first.`, threadId);
-          } else {
-            matches[matchId].result = result;
-            matches[matchId].homeScore = homeScore;
-            matches[matchId].awayScore = awayScore;
-            matches[matchId].status = "completed";
-            const award = awardMatchPoints(matchId, result, homeScore, awayScore);
-            saveAll();
-            api.sendMessage(`✅ Match ${matchId}: ${homeScore}-${awayScore}\n🎯 ${award.count} users received points!`, threadId);
-          }
-        }
-        else if (cmd.startsWith('/motmresult ')) {
-          const parts = cmd.replace('/motmresult ', '').trim().split(' ');
-          const matchId = parts[0];
-          const playerName = parts.slice(1).join(' ');
-          if (!matches[matchId]) {
-            api.sendMessage("❌ Invalid match ID", threadId);
-          } else if (!playerName) {
-            api.sendMessage(`❌ Example: /motmresult 1 Messi`, threadId);
-          } else {
-            const award = awardMotmPoints(matchId, playerName);
-            saveAll();
-            api.sendMessage(`✅ Match ${matchId} MOTM: ${playerName}\n⭐ ${award.count} users received 3 points!`, threadId);
-          }
-        }
-        else if (cmd.startsWith('/setpoints ')) {
-          const parts = cmd.replace('/setpoints ', '').trim().split(' ');
-          const targetUserId = parts[0];
-          const newPoints = parseInt(parts[1]);
-          if (!users[targetUserId]) {
-            api.sendMessage(`❌ User ${targetUserId} not found`, threadId);
-          } else {
-            const oldPoints = users[targetUserId].points;
-            users[targetUserId].points = newPoints;
-            saveAll();
-            api.sendMessage(`✅ Set points for ${users[targetUserId].name} from ${oldPoints} to ${newPoints} points`, threadId);
-          }
-        }
-        else if (cmd.startsWith('/setname ')) {
-          const parts = cmd.replace('/setname ', '').trim().split(' ');
-          const targetUserId = parts[0];
-          const newName = parts.slice(1).join(' ');
-          if (!users[targetUserId]) {
-            api.sendMessage(`❌ User ${targetUserId} not found`, threadId);
-          } else {
-            const oldName = users[targetUserId].name;
-            users[targetUserId].name = newName;
-            saveAll();
-            api.sendMessage(`✅ Set name for ${targetUserId} from ${oldName} to ${newName}`, threadId);
-          }
-        }
-        else if (cmd.startsWith('/resetaward ')) {
-          const matchId = cmd.replace('/resetaward ', '').trim();
-          if (!awardedMatches[matchId]) {
-            api.sendMessage(`⚠️ Match ${matchId} hasn't been awarded yet!`, threadId);
-          } else {
-            delete awardedMatches[matchId];
-            if (matches[matchId]) {
-              matches[matchId].status = "upcoming";
-              matches[matchId].result = null;
-              matches[matchId].homeScore = null;
-              matches[matchId].awayScore = null;
-            }
-            saveAll();
-            api.sendMessage(`✅ Reset award for Match ${matchId}. You can now re-run /result.`, threadId);
-          }
-        }
-        else if (cmd.startsWith('/resetmotm ')) {
-          const matchId = cmd.replace('/resetmotm ', '').trim();
-          if (!awardedMotm[matchId]) {
-            api.sendMessage(`⚠️ Match ${matchId} MOTM hasn't been awarded yet!`, threadId);
-          } else {
-            delete awardedMotm[matchId];
-            saveAll();
-            api.sendMessage(`✅ Reset MOTM award for Match ${matchId}.`, threadId);
-          }
-        }
-        else if (cmd === '/status') {
-          const completed = Object.values(matches).filter(m => m.status === 'completed').length;
-          api.sendMessage(`📊 STATUS\nUsers: ${Object.keys(users).length}\nMatch Predictions: ${Object.keys(matchPredictions).length}\nMOTM Predictions: ${Object.keys(motmPredictions).length}\nCompleted: ${completed}/${Object.keys(matches).length}\nAwarded Matches: ${Object.keys(awardedMatches).length}\nAwarded MOTM: ${Object.keys(awardedMotm).length}`, threadId);
-        }
-      }
-    }
-  });
+
+// Keep-alive web server for cron-job.org
+const http = require('http');
+const PORT = process.env.PORT || 3000;
+const server = http.createServer((req, res) => {
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.end('Bot is alive!');
 });
-
-// Import group commands
-const { kickUser, addUser, getPfp, tagUser, toggleAntiChange, antiChangeEnabled } = require('./group-commands.js');
-
-// Add these inside your message handler (after the music command, before /ping)
-
-      // ========== GROUP MANAGEMENT COMMANDS ==========
-      
-      // KICK - Remove a user
-      else if (cmd.startsWith('/kick')) {
-        const input = cmd.replace('/kick', '').trim();
-        kickUser(api, event, input);
-        return;
-      }
-      
-      // ADDUSER - Add a user
-      else if (cmd.startsWith('/adduser')) {
-        const input = cmd.replace('/adduser', '').trim();
-        addUser(api, event, input);
-        return;
-      }
-      
-      // PFP - Get profile picture
-      else if (cmd === '/pfp') {
-        getPfp(api, event);
-        return;
-      }
-      
-      // TAG - Mention a user
-      else if (cmd.startsWith('/tag')) {
-        const name = cmd.replace('/tag', '').trim();
-        tagUser(api, event, name);
-        return;
-      }
-      
-      // ANTICHANGE - Toggle anti-change mode
-      else if (cmd === '/antichange') {
-        toggleAntiChange(api, event);
-        return;
-      }
+server.listen(PORT, () => {
+  console.log(`✅ Web server running on port ${PORT}`);
+});
