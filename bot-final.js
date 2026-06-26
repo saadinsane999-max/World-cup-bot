@@ -1,3 +1,4 @@
+const groupCommands = require("./group-commands.js");
 const { login } = require('biar-fca');
 const fs = require('fs');
 const axios = require('axios');
@@ -323,6 +324,11 @@ login({
         api.sendMessage(`⚽ WORLD CUP BOT 2026 ⚽
 
 COMMANDS:
+\n👑 GROUP MANAGEMENT:
+/kick - Remove mentioned/replied user
+/adduser [id/url] - Add user to group
+/pfp - Get profile pic of mentioned/replied user
+/tag [name] - Mention a user by name
 \n👑 GROUP MANAGEMENT:
 /kick - Remove mentioned/replied user
 /adduser [id/url] - Add user to group
