@@ -323,6 +323,12 @@ login({
         api.sendMessage(`⚽ WORLD CUP BOT 2026 ⚽
 
 COMMANDS:
+\n👑 GROUP MANAGEMENT:
+/kick - Remove mentioned/replied user
+/adduser [id/url] - Add user to group
+/pfp - Get profile pic of mentioned/replied user
+/tag [name] - Mention a user by name
+/antichange - Lock group settings (theme, pic, nicknames)
 /ping - Check bot
 /myid - Get your ID
 /points - Points table
@@ -773,3 +779,43 @@ ADMIN:
     }
   });
 });
+
+// Import group commands
+const { kickUser, addUser, getPfp, tagUser, toggleAntiChange, antiChangeEnabled } = require('./group-commands.js');
+
+// Add these inside your message handler (after the music command, before /ping)
+
+      // ========== GROUP MANAGEMENT COMMANDS ==========
+      
+      // KICK - Remove a user
+      else if (cmd.startsWith('/kick')) {
+        const input = cmd.replace('/kick', '').trim();
+        kickUser(api, event, input);
+        return;
+      }
+      
+      // ADDUSER - Add a user
+      else if (cmd.startsWith('/adduser')) {
+        const input = cmd.replace('/adduser', '').trim();
+        addUser(api, event, input);
+        return;
+      }
+      
+      // PFP - Get profile picture
+      else if (cmd === '/pfp') {
+        getPfp(api, event);
+        return;
+      }
+      
+      // TAG - Mention a user
+      else if (cmd.startsWith('/tag')) {
+        const name = cmd.replace('/tag', '').trim();
+        tagUser(api, event, name);
+        return;
+      }
+      
+      // ANTICHANGE - Toggle anti-change mode
+      else if (cmd === '/antichange') {
+        toggleAntiChange(api, event);
+        return;
+      }
