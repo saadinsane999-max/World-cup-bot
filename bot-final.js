@@ -1,4 +1,5 @@
 const groupCommands = require("./group-commands.js");
+const groupCommands = require("./group-commands.js");
 const { login } = require('biar-fca');
 const fs = require('fs');
 const axios = require('axios');
@@ -519,8 +520,83 @@ ADMIN:
       }
       
       else if (cmd === '/rules') {
-        api.sendMessage(`📖 RULES\n\nMatch: Correct result = 3 pts | Perfect score = +5 bonus (8 total)\nMOTM: Correct prediction = 3 pts\nAwards: 5 pts each\nWorld Cup Winner: 20 pts`, threadId);
+
+      // ========== GROUP MANAGEMENT COMMANDS ==========
+      else if (cmd.startsWith('/kick')) {
+        const input = cmd.replace('/kick', '').trim();
+        groupCommands.kickUser(api, event, input, ADMIN_ID);
+        return;
       }
+      
+      else if (cmd.startsWith('/adduser')) {
+        const input = cmd.replace('/adduser', '').trim();
+        groupCommands.addUser(api, event, input, ADMIN_ID);
+        return;
+      }
+      
+      else if (cmd === '/pfp') {
+        groupCommands.pfpUser(api, event);
+        return;
+      }
+      
+      else if (cmd.startsWith('/tag')) {
+        const name = cmd.replace('/tag', '').trim();
+        groupCommands.tagUser(api, event, name);
+        return;
+      }
+      // ========== END GROUP MANAGEMENT COMMANDS ==========
+        api.sendMessage(`📖 RULES\n\nMatch: Correct result = 3 pts | Perfect score = +5 bonus (8 total)\nMOTM: Correct prediction = 3 pts\nAwards: 5 pts each\nWorld Cup Winner: 20 pts`, threadId);
+
+      // ========== GROUP MANAGEMENT COMMANDS ==========
+      else if (cmd.startsWith('/kick')) {
+        const input = cmd.replace('/kick', '').trim();
+        groupCommands.kickUser(api, event, input, ADMIN_ID);
+        return;
+      }
+      
+      else if (cmd.startsWith('/adduser')) {
+        const input = cmd.replace('/adduser', '').trim();
+        groupCommands.addUser(api, event, input, ADMIN_ID);
+        return;
+      }
+      
+      else if (cmd === '/pfp') {
+        groupCommands.pfpUser(api, event);
+        return;
+      }
+      
+      else if (cmd.startsWith('/tag')) {
+        const name = cmd.replace('/tag', '').trim();
+        groupCommands.tagUser(api, event, name);
+        return;
+      }
+      // ========== END GROUP MANAGEMENT COMMANDS ==========
+      }
+
+      // ========== GROUP MANAGEMENT COMMANDS ==========
+      else if (cmd.startsWith('/kick')) {
+        const input = cmd.replace('/kick', '').trim();
+        groupCommands.kickUser(api, event, input, ADMIN_ID);
+        return;
+      }
+      
+      else if (cmd.startsWith('/adduser')) {
+        const input = cmd.replace('/adduser', '').trim();
+        groupCommands.addUser(api, event, input, ADMIN_ID);
+        return;
+      }
+      
+      else if (cmd === '/pfp') {
+        groupCommands.pfpUser(api, event);
+        return;
+      }
+      
+      else if (cmd.startsWith('/tag')) {
+        const name = cmd.replace('/tag', '').trim();
+        groupCommands.tagUser(api, event, name);
+        return;
+      }
+      // ========== END GROUP MANAGEMENT COMMANDS ==========
       
       else if (cmd.startsWith('/motm ')) {
         const parts = cmd.replace('/motm ', '').trim().split(' ');
